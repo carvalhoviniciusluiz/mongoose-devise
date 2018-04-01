@@ -1,6 +1,6 @@
 {
   "name": "node-devise",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Another flexible authentication solution for mongoose.",
   "main": "dist/index.js",
   "directories": {
@@ -16,8 +16,16 @@
   "engines": {
     "node": ">8.0.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carvalhoviniciusluiz/node-devise.git"
+  },
   "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/carvalhoviniciusluiz/node-devise/issues"
+  },
+  "homepage": "https://github.com/carvalhoviniciusluiz/node-devise#readme",
   "dependencies": {
     "assert-plus": "^1.0.0",
     "bcryptjs": "^2.4.3",
