@@ -4,6 +4,7 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 [![standard][standard-image]][standard-url]
 [![travis][travis-image]][travis-url]
 [![Code Coverage][coverage-image]][coverage-url]
+[![npm][npm-image]][npm-url]
 
 [standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
 [standard-url]: http://standardjs.com/
@@ -11,6 +12,8 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 [travis-url]: https://travis-ci.org/carvalhoviniciusluiz/node-devise
 [coverage-image]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/node-devise/badges/quality-score.png?b=master
 [coverage-url]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/node-devise/?branch=master
+[npm-image]: https://img.shields.io/npm/v/node-devise.svg?style=flat
+[npm-url]: https://npmjs.org/package/node-devise
 
 ### Installation:
 ```sh
