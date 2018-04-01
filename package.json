@@ -1,0 +1,52 @@
+{
+  "name": "node-devise",
+  "version": "0.1.0",
+  "description": "Another flexible authentication solution for mongoose.",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "babel src --out-dir dist --ignore *.spec.js --no-comments",
+    "lint": "eslint .",
+    "test": "NODE_ENV=test mocha src",
+    "test:file": "NODE_ENV=test mocha"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">8.0.0"
+  },
+  "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "assert-plus": "^1.0.0",
+    "bcryptjs": "^2.4.3",
+    "lodash": "^4.17.5",
+    "moment": "^2.21.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^8.2.2",
+    "babel-preset-env": "^1.6.1",
+    "babel-register": "^6.26.0",
+    "babel-runtime": "^6.26.0",
+    "chai": "^4.1.2",
+    "chai-http": "^4.0.0",
+    "co-mocha": "^1.2.2",
+    "dirty-chai": "^2.0.1",
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "faker": "^4.1.0",
+    "mocha": "^5.0.5",
+    "mongoose": "^5.0.11",
+    "pre-commit": "^1.2.2"
+  },
+  "pre-commit": [
+    "lint",
+    "test"
+  ]
+}
