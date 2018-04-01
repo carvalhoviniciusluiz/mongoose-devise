@@ -2,9 +2,12 @@
 Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/). Inspired by [irina](https://github.com/lykmapipo/irina).
 
 [![standard][standard-image]][standard-url]
+[![travis][travis-image]][travis-url]
 
 [standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
 [standard-url]: http://standardjs.com/
+[travis-image]: https://travis-ci.org/carvalhoviniciusluiz/node-devise.svg?branch=master
+[travis-url]: https://travis-ci.org/carvalhoviniciusluiz/node-devise
 
 ### Installation:
 ```sh
