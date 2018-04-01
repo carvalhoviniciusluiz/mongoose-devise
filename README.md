@@ -17,7 +17,7 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 
 ### Installation:
 ```sh
-$ npm install node-devise --save
+npm install node-devise --save
 ```
 
 ### Requires:
@@ -781,11 +781,11 @@ UserSchema.plugin(devise, { i18n: i18n })
 ### Test
 * Install all development dependencies
 ```sh
-$ npm install
+npm install
 ```
 * Then run test
 ```sh
-$ npm test
+npm test
 ```
 
 ### License

@@ -1,6 +1,6 @@
 {
   "name": "node-devise",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Another flexible authentication solution for mongoose.",
   "main": "dist/index.js",
   "directories": {
@@ -30,7 +30,7 @@
     "assert-plus": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "lodash": "^4.17.5",
-    "moment": "^2.21.0"
+    "moment": "^2.22.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
