@@ -3,11 +3,14 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 
 [![standard][standard-image]][standard-url]
 [![travis][travis-image]][travis-url]
+[![Code Coverage][coverage-image]][coverage-url]
 
 [standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
 [standard-url]: http://standardjs.com/
 [travis-image]: https://travis-ci.org/carvalhoviniciusluiz/node-devise.svg?branch=master
 [travis-url]: https://travis-ci.org/carvalhoviniciusluiz/node-devise
+[coverage-image]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/node-devise/badges/quality-score.png?b=master
+[coverage-url]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/node-devise/?branch=master
 
 ### Installation:
 ```sh
