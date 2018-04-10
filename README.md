@@ -15,6 +15,10 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 [npm-image]: https://img.shields.io/npm/v/node-devise.svg?style=flat
 [npm-url]: https://npmjs.org/package/node-devise
 
+> See complete MVC solution based on Restify engines;
+
+> [Restify Devise](https://github.com/carvalhoviniciusluiz/restify-devise)
+
 ### Installation:
 ```sh
 npm install node-devise --save
@@ -766,7 +770,7 @@ UserSchema.plugin(devise, { i18n: i18n })
 ```
 
 ## Features & Roadmap
-- [TODO] v0.1.0
+- [TODO] v0.1.3
 - [DONE] Authenticatable
 - ~~[DONE]~~ Omniauthable [[doc]](http://www.rubydoc.info/github/plataformatec/devise/master/Devise/Models/Omniauthable)
 - [DONE] Confirmable
