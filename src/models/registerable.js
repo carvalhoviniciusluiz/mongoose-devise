@@ -6,6 +6,8 @@ import { parseError, isFunction } from '../helpers'
 let options = {}
 
 export default function (schema, opt) {
+  schema.plugin(require('mongoose-unique-validator'))
+
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
 
@@ -80,14 +82,10 @@ export default function (schema, opt) {
 
         resolve(registerable)
       } catch (error) {
-        // check if unique constraint error is due to authentication field
-        const regex = new RegExp(options.authenticationField, 'g')
-
-        // handle MongoError: E11000 duplicate key error index on authentication
-        // field and ignore others
-        if (error.code === 11000 && regex.test(error.message)) {
+        if (error.errors && error.errors[options.authenticationField]) {
           error.message = this.t('authenticatorAlreadyExistErrorMessage', {
-            field: options.authenticationField
+            field: options.authenticationField,
+            value: error.errors[options.authenticationField].value
           })
         }
         parseError(error)

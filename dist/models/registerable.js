@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 exports.default = function (schema, opt) {
+  schema.plugin(require('mongoose-unique-validator'));
+
   _assertPlus2.default.func(schema.methods.t, 'translator method');
   _assertPlus2.default.func(schema.statics.t, 'translator method');
 
@@ -60,11 +62,10 @@ exports.default = function (schema, opt) {
 
         resolve(registerable);
       } catch (error) {
-        const regex = new RegExp(options.authenticationField, 'g');
-
-        if (error.code === 11000 && regex.test(error.message)) {
+        if (error.errors && error.errors[options.authenticationField]) {
           error.message = this.t('authenticatorAlreadyExistErrorMessage', {
-            field: options.authenticationField
+            field: options.authenticationField,
+            value: error.errors[options.authenticationField].value
           });
         }
         (0, _helpers.parseError)(error);
