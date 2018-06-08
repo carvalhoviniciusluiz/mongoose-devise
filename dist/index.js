@@ -25,8 +25,18 @@ exports.default = function (schema, opt) {
     done();
   };
 
+  function stringFormat(key, values) {
+    let message = options[key];
+    if (values) {
+      Object.keys(values).forEach(param => {
+        message = message.replace(`{{${param}}}`, values[param]);
+      });
+    }
+    return message;
+  }
+
   function t(key, values) {
-    return options.i18n ? options.i18n.t(key, values) : options[key];
+    return options.i18n ? options.i18n.t(key, values) : stringFormat(key, values);
   }
   schema.methods.t = schema.methods.t || t;
   schema.statics.t = schema.statics.t || t;

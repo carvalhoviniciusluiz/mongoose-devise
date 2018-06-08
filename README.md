@@ -758,7 +758,7 @@ the `node-devise` uses messages with the i18n. To customize your application, yo
     recoveryTokenExpiredErrorMessage: 'Recovery token expired',
 
     // registerable
-    authenticatorAlreadyExistErrorMessage: 'Account of {{field}} already exist'
+    authenticatorAlreadyExistErrorMessage: 'Account of {{field}} "{{value}}" already exist'
   }
 }
 ```
@@ -770,7 +770,7 @@ UserSchema.plugin(devise, { i18n: i18n })
 ```
 
 ## Features & Roadmap
-- [TODO] v0.1.3
+- [TODO] v0.1.4
 - [DONE] Authenticatable
 - ~~[DONE]~~ Omniauthable [[doc]](http://www.rubydoc.info/github/plataformatec/devise/master/Devise/Models/Omniauthable)
 - [DONE] Confirmable
