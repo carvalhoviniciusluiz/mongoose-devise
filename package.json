@@ -2,37 +2,28 @@
   "name": "node-devise",
   "version": "0.1.4",
   "description": "Another flexible authentication solution for mongoose.",
-  "main": "dist/index.js",
-  "directories": {
-    "test": "test"
-  },
+  "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
+  "license": "MIT",
+  "main": "dist/node-devise.cjs.js",
+  "types": "types/index.d.ts",
+  "module": "dist/node-devise.es.js",
   "scripts": {
-    "build": "babel src --out-dir dist --ignore *.spec.js --no-comments",
     "lint": "eslint .",
     "test": "NODE_ENV=test mocha src",
-    "test:file": "NODE_ENV=test mocha"
+    "test:file": "NODE_ENV=test mocha",
+    "pretest": "npm run lint",
+    "build": "babel src --out-dir build --ignore *.spec.js --no-comments",
+    "bundle": "bili build/index.js --formats es,cjs --js buble --banner",
+    "prepublishOnly": "npm run build && npm run bundle"
   },
-  "keywords": [
-    "mongodb",
-    "mongoose",
-    "register",
-    "confirm",
-    "authenticate",
-    "recover",
-    "lock",
-    "es6"
+  "files": [
+    "dist/",
+    "types/"
   ],
-  "engineStrict": true,
-  "engines": {
-    "node": ">=8.0.0",
-    "npm": ">=5"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carvalhoviniciusluiz/node-devise.git"
   },
-  "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/carvalhoviniciusluiz/node-devise/issues"
   },
@@ -68,5 +59,15 @@
   "pre-commit": [
     "lint",
     "test"
+  ],
+  "keywords": [
+    "node",
+    "mongoose",
+    "devise",
+    "authentication",
+    "register",
+    "confirmation",
+    "recoveration",
+    "blockade"
   ]
 }

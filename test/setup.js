@@ -11,7 +11,10 @@ chai.use(dirtyChai)
 
 // prepares a clean bank
 before(() => {
-  mongoose.connect('mongodb://localhost/devise', (err) => {
+  const options = {
+    useNewUrlParser: true
+  }
+  mongoose.connect('mongodb://localhost/devise', options, (err) => {
     if (err) {
       throw err
     }
