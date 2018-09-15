@@ -4,6 +4,7 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 [![standard][standard-image]][standard-url]
 [![travis][travis-image]][travis-url]
 [![Code Coverage][coverage-image]][coverage-url]
+[![npm][npm-image]][npm-url]
 
 [standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
 [standard-url]: http://standardjs.com/
@@ -11,6 +12,8 @@ Another flexible authentication solution for [mongoosejs](http://mongoosejs.com/
 [travis-url]: https://travis-ci.org/carvalhoviniciusluiz/mongoose-devise
 [coverage-image]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/mongoose-devise/badges/quality-score.png?b=master
 [coverage-url]: https://scrutinizer-ci.com/g/carvalhoviniciusluiz/mongoose-devise/?branch=master
+[npm-image]: https://img.shields.io/npm/v/mongoose-devise.svg?style=flat
+[npm-url]: https://npmjs.org/package/mongoose-devise
 
 ### Requires:
 Node ``>8.0.0``.
@@ -316,7 +319,7 @@ schema.methods.sendNotification = function (record, action, done) {
 
 It is recommended to use job queue like [kue](https://github.com/Automattic/kue) or [bull](https://github.com/OptimalBits/bull) when implementing your send to reduce your API response time.
 
-#### Custom messages
+### Custom messages
 
 `mongoose-devise` uses messages to customize your application, you can configure the message definition variables manually
 
@@ -356,7 +359,7 @@ userSchema.plugin(devise, {
 
 > [Restify Devise](https://github.com/carvalhoviniciusluiz/restify-devise)
 
-#### thanks
+### Thanks
 
 Inspired by [irina](https://github.com/lykmapipo/irina).
 
