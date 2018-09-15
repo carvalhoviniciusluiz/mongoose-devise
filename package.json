@@ -1,11 +1,10 @@
 {
   "name": "mongoose-devise",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Another flexible authentication solution for mongoose.",
   "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
   "license": "MIT",
   "main": "dist/mongoose-devise.cjs.js",
-  "types": "types/index.d.ts",
   "module": "dist/mongoose-devise.es.js",
   "scripts": {
     "lint": "eslint .",
@@ -17,8 +16,7 @@
     "prepublishOnly": "npm run build && npm run bundle"
   },
   "files": [
-    "dist/",
-    "types/"
+    "dist/"
   ],
   "repository": {
     "type": "git",
