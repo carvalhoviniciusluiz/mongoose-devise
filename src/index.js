@@ -1,16 +1,16 @@
 'use strict'
 
 import './types/email'
-import Authenticable from './models/authenticable'
-import Registerable from './models/registerable'
-import Confirmable from './models/confirmable'
-import Lockable from './models/lockable'
-import Recoverable from './models/recoverable'
-import Trackable from './models/trackable'
+import { authenticable } from './models/authenticable'
+import { confirmable } from './models/confirmable'
+import { lockable } from './models/lockable'
+import { recoverable } from './models/recoverable'
+import { registerable } from './models/registerable'
+import { trackable } from './models/trackable'
 
 let options = {}
 
-export default function (schema, opt) {
+export function devise (schema, opts) {
   options = Object.assign({
     confirmable: {
       tokenLifeSpan: 3
@@ -25,14 +25,11 @@ export default function (schema, opt) {
     registerable: {
       autoConfirm: false
     }
-  }, opt)
+  }, opts)
 
-  // implementation of notification send
-  schema.methods.send = schema.methods.send || function (record, action, done) {
-    done()
-  }
-
-  // format the string with the past values
+  /*
+  * format the string with the past values
+  */
   function stringFormat (key, values) {
     let message = options[key]
     if (values) {
@@ -43,19 +40,34 @@ export default function (schema, opt) {
     return message
   }
 
-  // implementation of translator method
+  /*
+  * implementation of translator method
+  */
   function t (key, values) {
     return options.i18n
       ? options.i18n.t(key, values)
       : stringFormat(key, values)
   }
+
+  /*
+  * implementation of notification send
+  */
+  function sendNotification (record, action, done) {
+    done()
+  }
+
+  schema.methods.sendNotification = schema.methods.send || sendNotification
+
+  // i18n adapter methodos
   schema.methods.t = schema.methods.t || t
   schema.statics.t = schema.statics.t || t
 
-  Authenticable(schema, options)
-  Registerable(schema, options)
-  Confirmable(schema, options)
-  Lockable(schema, options)
-  Recoverable(schema, options)
-  Trackable(schema)
+  authenticable(schema, options)
+  confirmable(schema, options)
+  lockable(schema, options)
+  recoverable(schema, options)
+  registerable(schema, options)
+  trackable(schema)
 }
+
+export default devise

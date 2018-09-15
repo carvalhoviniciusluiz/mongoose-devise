@@ -1,16 +1,16 @@
 {
-  "name": "node-devise",
-  "version": "0.1.4",
+  "name": "mongoose-devise",
+  "version": "1.0.0",
   "description": "Another flexible authentication solution for mongoose.",
   "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
   "license": "MIT",
-  "main": "dist/node-devise.cjs.js",
+  "main": "dist/mongoose-devise.cjs.js",
   "types": "types/index.d.ts",
-  "module": "dist/node-devise.es.js",
+  "module": "dist/mongoose-devise.es.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "NODE_ENV=test mocha src",
-    "test:file": "NODE_ENV=test mocha",
+    "test": "mocha src",
+    "test:file": "mocha",
     "pretest": "npm run lint",
     "build": "babel src --out-dir build --ignore *.spec.js --no-comments",
     "bundle": "bili build/index.js --formats es,cjs --js buble --banner",
@@ -22,18 +22,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/carvalhoviniciusluiz/node-devise.git"
+    "url": "git+https://github.com/carvalhoviniciusluiz/mongoose-devise.git"
   },
   "bugs": {
-    "url": "https://github.com/carvalhoviniciusluiz/node-devise/issues"
+    "url": "https://github.com/carvalhoviniciusluiz/mongoose-devise/issues"
   },
-  "homepage": "https://github.com/carvalhoviniciusluiz/node-devise#readme",
+  "homepage": "https://github.com/carvalhoviniciusluiz/mongoose-devise#readme",
   "dependencies": {
     "assert-plus": "^1.0.0",
     "bcryptjs": "^2.4.3",
-    "lodash": "^4.17.10",
-    "moment": "^2.22.2",
-    "mongoose-unique-validator": "^2.0.1"
+    "lodash": "^4.17.11",
+    "moment": "^2.22.2"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -41,6 +40,7 @@
     "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
     "babel-runtime": "^6.26.0",
+    "bili": "^3.1.2",
     "chai": "^4.1.2",
     "chai-http": "^4.0.0",
     "co-mocha": "^1.2.2",

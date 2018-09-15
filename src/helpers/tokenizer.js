@@ -1,26 +1,31 @@
 'use strict'
 
-var crypto = require('crypto')
+import crypto from 'crypto'
 
-function Tokenizer (secret) {
-  this.cipher = crypto.createCipher('aes-256-cbc', secret)
-  this.decipher = crypto.createDecipher('aes-256-cbc', secret)
-}
+export class Tokenizer {
+  constructor (secret) {
+    this.cipher = undefined
+    this.decipher = undefined
 
-Tokenizer.prototype.encrypt = function (text) {
-  let crypted = this.cipher.update(text, 'utf8', 'hex')
-  crypted += this.cipher.final('hex')
-  return crypted
-}
+    this.encrypt = function (text) {
+      let crypted = this.cipher.update(text, 'utf8', 'hex')
+      crypted += this.cipher.final('hex')
+      return crypted
+    }
 
-Tokenizer.prototype.decrypt = function (text) {
-  let dec = this.decipher.update(text, 'hex', 'utf8')
-  dec += this.decipher.final('utf8')
-  return dec
-}
+    this.decrypt = function (text) {
+      let dec = this.decipher.update(text, 'hex', 'utf8')
+      dec += this.decipher.final('utf8')
+      return dec
+    }
 
-Tokenizer.prototype.match = function (token, text) {
-  return this.decrypt(token) === text
+    this.match = function (token, text) {
+      return this.decrypt(token) === text
+    }
+
+    this.cipher = crypto.createCipher('aes-256-cbc', secret)
+    this.decipher = crypto.createDecipher('aes-256-cbc', secret)
+  }
 }
 
 export const genToken = (secret) => {

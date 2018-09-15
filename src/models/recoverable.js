@@ -1,39 +1,35 @@
 'use strict'
 
 import assert from 'assert-plus'
-import { genToken, addDays, isAfter, parseError, isFunction, isObject } from '../helpers'
+import { DeviseError } from '../errors'
+import { Utils } from '../helpers'
+
+// only the necessary functions
+const { genToken, addDays, isFunction, isAfter, isObject, parseError } = Utils
+
+const deviseError = new DeviseError()
+deviseError.code = 'ERECOV'
 
 let options = {}
 
-export default function (schema, opt) {
-  assert.func(schema.methods.send, 'send method')
+export function recoverable (schema, opts) {
+  assert.func(schema.methods.sendNotification, 'sendNotification method')
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
 
-  options = opt || {}
+  options = opts || {}
 
-  // prepare authentication field
   options.authenticationField = options.authenticationField || 'email'
-
-  // prepare error's messages
-  options.invalidRecoveryDetailsErrorMessage =
-    options.invalidRecoveryDetailsErrorMessage || 'Invalid recovery details'
-
-  options.invalidRecoveryTokenErrorMessage =
-    options.invalidRecoveryTokenErrorMessage || 'Invalid recovery token'
-
-  options.recoveryTokenExpiredErrorMessage =
-    options.recoveryTokenExpiredErrorMessage || 'Recovery token expired'
-
-  options.authenticatorErrorMessage =
-    options.authenticatorErrorMessage || `No ${options.authenticationField} provided`
-
-  options.credentialsNotExistErrorMessage =
-    options.credentialsNotExistErrorMessage || 'Incorrect credentials'
+  options.passwordField = options.passwordField || 'password'
+  options.accountWithoutAssociationError = options.accountWithoutAssociationError || `Account without association with ${options.authenticationField}`
+  options.invalidRecoveryTokenError = options.invalidRecoveryTokenError || 'Invalid recovery token'
+  options.recoveryTokenExpiredError = options.recoveryTokenExpiredError || 'Recovery token expired'
+  options.authenticatorError = options.authenticatorError || `No ${options.authenticationField} provided`
+  options.credentialsNotExistError = options.credentialsNotExistError || 'Incorrect credentials'
+  // options.accountNotConfirmedError = options.accountNotConfirmedError || 'Account not confirmed'
 
   // prepare common options
-  options.tokenLifeSpan = options.recoverable
-    ? (options.recoverable.tokenLifeSpan || 3) : 3
+  options.recoverable.tokenLifeSpan = options.recoverable ? (options.recoverable.tokenLifeSpan || 3) : 3
 
   // add confirmable schema fields
   schema.add({
@@ -44,112 +40,95 @@ export default function (schema, opt) {
     },
     recoveryTokenExpiryAt: {
       type: Date,
-      default: null
+      default: null,
+      index: true
     },
     recoverySentAt: {
       type: Date,
-      default: null
+      default: null,
+      index: true
     },
     recoveredAt: {
       type: Date,
-      default: null
+      default: null,
+      index: true
     }
   })
 
-  schema.methods.generateRecoveryToken = function (opts = { save: true }) {
-    assert.object(opts, 'opts')
-
-    const self = this
-    return new Promise(async (resolve, reject) => {
-      try {
-        // set recovery expiration date
-        self.recoveryTokenExpiryAt = addDays(options.tokenLifeSpan)
-
-        // generate recovery token based on recovery token expiry at
-        const tokenizer = genToken(self.recoveryTokenExpiryAt.getTime().toString())
-
-        // set recoveryToken
-        self.recoveryToken = tokenizer.encrypt(self[options.authenticationField])
-
-        // clear previous recovery details if any
-        self.recoveredAt = null
-
-        if (opts.save) {
-          await self.save()
-        }
-
-        resolve(self)
-      } catch (error) {
-        reject(error)
-      }
-    })
+  // check if recovery token expired
+  schema.methods.hasRecoveryTokenExpired = function () {
+    return !isAfter(new Date(), this.recoveryTokenExpiryAt)
   }
 
-  schema.methods.sendRecovery = function (opt = { save: true }) {
+  schema.methods.generateRecoveryToken = function () {
     const self = this
 
-    // check if already recovered
-    const isRecovered = (self.recoveredAt && self.recoveredAt !== null)
+    // set recovery expiration date
+    self.recoveryTokenExpiryAt = addDays(options.recoverable.tokenLifeSpan)
 
-    return new Promise(async (resolve, reject) => {
-      // if already recovered back-off
-      if (isRecovered) {
-        return resolve(self)
-      }
+    // generate recovery token based on recovery token expiry at
+    const tokenizer = genToken(self.recoveryTokenExpiryAt.getTime().toString())
 
-      // send confirmation instruction
-      self.send(self, 'password_recovery', async (callback) => {
-        try {
-          if (isFunction(callback)) {
-            callback(opt)
-          }
+    // set recoveryToken
+    self.recoveryToken = tokenizer.encrypt(self[options.authenticationField])
 
-          // update recovery send time
-          self.recoverySentAt = new Date()
+    // clear previous recovery details if any
+    self.recoveredAt = null
+  }
 
-          if (opt.save) {
-            await self.save()
-          }
+  schema.methods.sendRecovery = function (opts) {
+    const self = this
 
-          resolve(self)
-        } catch (error) {
-          reject(error)
+    // send recoverable instructions
+    self.sendNotification(self, 'password_recovery', async fn => {
+      try {
+        // update recovery send time
+        self.recoverySentAt = new Date()
+
+        if (isFunction(fn)) {
+          await fn(opts)
         }
-      })
+      } catch (error) {
+        console.log(`[Error]: sendRecovery - ${error.stack}`)
+      }
     })
   }
 
   schema.statics.requestRecover = function (credentials, opts) {
     const Recoverable = this
 
-    // disable send recovery save
-    !isObject(opts) ? opts = { save: false } : opts.save = false
-
     return new Promise(async (resolve, reject) => {
-      try {
-        assert.object(credentials, this.t('credentialsNotExistErrorMessage'))
-        assert.ok(credentials[options.authenticationField], this.t('authenticatorErrorMessage', {
+      if (!isObject(credentials) || !credentials[options.authenticationField]) {
+        deviseError.message = this.t('authenticatorError', {
           field: options.authenticationField
-        }))
+        })
+        return reject(deviseError)
+      }
 
-        const criteria = {}
-        criteria[options.authenticationField] = credentials[options.authenticationField]
+      const criteria = {}
+      criteria[options.authenticationField] = credentials[options.authenticationField]
 
+      try {
         const recoverable = await Recoverable.findOne(criteria)
-        assert.object(recoverable, this.t('invalidRecoveryDetailsErrorMessage'))
-
-        // if already confirmed back-off
-        if (isFunction(recoverable.isConfirmed)) {
-          await recoverable.isConfirmed()
+        if (!recoverable) {
+          deviseError.message = this.t('accountWithoutAssociationError')
+          return reject(deviseError)
         }
 
-        await recoverable.generateRecoveryToken(opts)
+        // if (!recoverable.isConfirmed()) {
+        //   deviseError.message = this.t('accountNotConfirmedError')
+        //   reject(deviseError)
+        // }
+
+        // generate recovery token
+        await recoverable.generateRecoveryToken()
+
+        // send recovery notification
         await recoverable.sendRecovery(opts)
         await recoverable.save()
 
         resolve(recoverable)
       } catch (error) {
-        parseError(error)
         reject(error)
       }
     })
@@ -157,40 +136,42 @@ export default function (schema, opt) {
 
   schema.statics.recover = function (recoveryToken, newPassword) {
     const Recoverable = this
-
     return new Promise(async (resolve, reject) => {
       try {
         const recoverable = await Recoverable.findOne({ recoveryToken })
-        assert.object(recoverable, this.t('invalidRecoveryTokenErrorMessage'))
-
-        // check if recovery token expired
-        const isTokenExpired = !isAfter(new Date(), recoverable.recoveryTokenExpiryAt)
+        if (!recoverable) {
+          deviseError.message = this.t('invalidRecoveryTokenError')
+          return reject(deviseError)
+        }
 
         // if expired
-        if (isTokenExpired) {
-          throw new Error(this.t('recoveryTokenExpiredErrorMessage'))
+        if (recoverable.hasRecoveryTokenExpired()) {
+          deviseError.message = this.t('recoveryTokenExpiredError')
+          return reject(deviseError)
         }
 
         // verify recovery token
-        const value = recoverable.recoveryTokenExpiryAt.getTime().toString()
-        const tokenizer = genToken(value)
+        const val = recoverable.recoveryTokenExpiryAt.getTime().toString()
+        const tokenizer = genToken(val)
 
         if (!tokenizer.match(recoveryToken, recoverable[options.authenticationField])) {
-          throw new Error(this.t('invalidRecoveryTokenErrorMessage'))
+          deviseError.message = this.t('invalidRecoveryTokenError')
+          return reject(deviseError)
         }
+
+        // change password and save object
+        recoverable[options.passwordField] = newPassword
 
         // update recovery details
         recoverable.recoveredAt = new Date()
 
-        // change password and save object
-        if (isFunction(recoverable.encryptPassword)) {
-          await recoverable.changePassword(newPassword)
-        }
+        // prevent another attempt
+        recoverable.recoveryToken = null
+        await recoverable.save()
 
         resolve(recoverable)
       } catch (error) {
-        parseError(error)
-        reject(error)
+        reject(parseError(error))
       }
     })
   }

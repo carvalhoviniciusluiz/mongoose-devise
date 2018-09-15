@@ -2,19 +2,29 @@
 
 import mongoose from 'mongoose'
 
-function Email (path, options) {
-  mongoose.SchemaType.call(this, path, options, 'Email')
-}
+const regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
-Email.prototype = Object.create(mongoose.SchemaType.prototype)
-
-// http://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-Email.prototype.cast = function (email) {
-  const Regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-
-  if (!Regex.test(email)) {
-    throw new Error('Invalid email address')
+function isEmail (val, options) {
+  const required = (typeof options.required === 'function') ? options.required() : options.required
+  const passedAllowBlank = options.allowBlank && (val === '' || val === null)
+  if (passedAllowBlank && !required) {
+    return true
   }
-  return email
+  return regex.test(val)
 }
+
+exports.isEmail = isEmail
+
+function Email (path, options) {
+  mongoose.SchemaTypes.String.call(this, path, options)
+  function isValid (val) {
+    return isEmail(val, options)
+  }
+  this.validate(isValid, options.message || 'invalid email address')
+}
+
+Object.setPrototypeOf(Email.prototype, mongoose.SchemaTypes.String.prototype)
+
 mongoose.Schema.Types.Email = Email
+mongoose.Types.Email = String
+module.exports = Email

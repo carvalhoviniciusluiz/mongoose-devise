@@ -4,11 +4,11 @@ import faker from 'faker'
 import { before, beforeEach, describe, it } from 'mocha'
 import { expect } from 'chai'
 import mongoose from 'mongoose'
-import devise from '..'
+import { devise } from '..'
 
 const Schema = mongoose.Schema
 
-describe('Confirmable: models', () => {
+describe('Confirmable models', () => {
   before((done) => {
     const ConfirmableSchema = new Schema({})
     ConfirmableSchema.plugin(devise)
@@ -24,7 +24,6 @@ describe('Confirmable: models', () => {
   describe('Confirmable Fields', () => {
     it('should have confirmation fields', (done) => {
       const Confirmable = mongoose.model('Confirmable')
-
       expect(Confirmable.schema.paths).to.have.property('confirmationToken')
       expect(Confirmable.schema.paths).to.have.property('confirmationTokenExpiryAt')
       expect(Confirmable.schema.paths).to.have.property('confirmedAt')
@@ -35,28 +34,20 @@ describe('Confirmable: models', () => {
 
     it('should be able to set custom confirmation', async () => {
       const ConfirmableSchema = new Schema({})
-
       ConfirmableSchema.plugin(devise, {
         authenticationField: 'username',
-        invalidConfirmationTokenErrorMessage: '1',
-        confirmationTokenExpiredErrorMessage: '2',
-        accountNotConfirmedErrorMessage: '3',
-        checkConfirmationTokenExpiredErrorMessage: '4',
-        confirmable: {
-          tokenLifeSpan: 1
-        }
+        invalidConfirmationTokenError: 'invalidConfirmationTokenError',
+        confirmationTokenExpiredError: 'confirmationTokenExpiredError',
+        accountNotConfirmedError: 'accountNotConfirmedError'
       })
       const Confirmable = mongoose.model('ConfirmableSchemaTest', ConfirmableSchema)
-
       try {
         await Confirmable.confirm()
       } catch (error) {
-        expect(error.message).to.equal('1')
+        expect(error.message).to.equal('invalidConfirmationTokenError')
       }
-      // TODO test to confirmationTokenExpiredErrorMessage
-      // TODO test to accountNotConfirmedErrorMessage
-      // TODO test to checkConfirmationTokenExpiredErrorMessage
-      // TODO test to confirmable object
+      // TODO test to confirmationTokenExpiredError
+      // TODO test to accountNotConfirmedError
     })
   })
 
@@ -67,10 +58,9 @@ describe('Confirmable: models', () => {
       password: faker.internet.password()
     })
     expect(confirmable.generateConfirmationToken).to.be.a('function')
-
-    const res = await confirmable.generateConfirmationToken()
-    expect(res.confirmationToken).to.not.be.null()
-    expect(res.confirmationTokenExpiryAt).to.not.be.null()
+    confirmable.generateConfirmationToken()
+    expect(confirmable.confirmationToken).to.not.be.null()
+    expect(confirmable.confirmationTokenExpiryAt).to.not.be.null()
   })
 
   it('should be able to send confirmation instructions', async function () {
@@ -80,8 +70,7 @@ describe('Confirmable: models', () => {
       password: faker.internet.password()
     })
     expect(confirmable.sendConfirmation).to.be.a('function')
-
-    await confirmable.sendConfirmation()
+    confirmable.sendConfirmation()
     expect(confirmable.confirmationSentAt).to.not.be.null()
   })
 

@@ -4,7 +4,7 @@ import faker from 'faker'
 import { before, beforeEach, describe, it } from 'mocha'
 import { expect } from 'chai'
 import mongoose from 'mongoose'
-import devise from '..'
+import { devise } from '..'
 
 const Schema = mongoose.Schema
 
@@ -13,7 +13,7 @@ const credentials = {
   password: faker.internet.password()
 }
 
-describe('Registerable: models', () => {
+describe('Registerable models', () => {
   before((done) => {
     const RegisterableSchema = new Schema({})
     RegisterableSchema.plugin(devise)
@@ -37,33 +37,30 @@ describe('Registerable: models', () => {
 
     it('should be able to set custom registration', async () => {
       const RegisterableSchema = new Schema({})
-
       RegisterableSchema.plugin(devise, {
         authenticationField: 'username',
-        credentialsNotExistErrorMessage: '1',
-        authenticatorAlreadyExistErrorMessage: '2',
-        registerable: {
-          autoConfirm: false
-        }
+        definitionsNotFoundError: 'definitionsNotFoundError'
       })
       const Registerable = mongoose.model('RegisterableSchemaTest', RegisterableSchema)
-
       try {
         await Registerable.register()
       } catch (error) {
-        expect(error.message).to.equal('1')
+        expect(error.message).to.equal('definitionsNotFoundError')
       }
-
-      // TODO test to authenticatorAlreadyExistErrorMessage
-      // TODO test to registerable object
     })
   })
 
-  it('should have register function', (done) => {
+  it('should provide a valid email', async () => {
     const Registerable = mongoose.model('Registerable')
     expect(Registerable.register).to.be.a('function')
-
-    done()
+    try {
+      await Registerable.register({
+        email: 'email',
+        password: faker.internet.password()
+      })
+    } catch (error) {
+      expect(error.errors.email.message).to.equal('invalid email address')
+    }
   })
 
   it('should be able to register', async () => {
@@ -78,41 +75,19 @@ describe('Registerable: models', () => {
     const Registerable = mongoose.model('Registerable')
     try {
       await Registerable.register(credentials)
+      await Registerable.register(credentials)
     } catch (error) {
-      expect(error.message).to.equal('Account of email already exist')
+      expect(error.message).to.equal(`E11000 duplicate key error collection: devise.registerables index: email_1 dup key: { : "${credentials.email}" }`)
     }
   })
 
   it('should be able to unregister', async () => {
     const Registerable = mongoose.model('Registerable')
-
     const register = await Registerable.register({
       email: faker.internet.email().toLowerCase(),
       password: faker.internet.password()
     })
     const registerable = await register.unregister()
     expect(registerable.unregisteredAt).to.not.be.null()
-  })
-
-  it('should be able to auto confirm registration', async () => {
-    var RegisterableAutoConfirmSchema = new Schema({})
-    RegisterableAutoConfirmSchema.plugin(devise, {
-      registerable: {
-        autoConfirm: true
-      }
-    })
-
-    var Registerable = mongoose.model('RegisterableAutoConfirm', RegisterableAutoConfirmSchema)
-
-    const credentials = {
-      password: faker.internet.password(),
-      email: faker.internet.email().toLowerCase()
-    }
-
-    const registerable = await Registerable.register(credentials)
-    expect(registerable.registeredAt).to.not.be.null()
-    expect(registerable.email).to.be.equal(credentials.email)
-    expect(registerable.confirmationToken).to.not.be.null()
-    expect(registerable.confirmedAt).to.not.be.null()
   })
 })

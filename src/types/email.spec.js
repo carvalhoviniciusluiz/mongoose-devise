@@ -15,7 +15,7 @@ const testSchema = new mongoose.Schema({
 
 const TestMail = mongoose.model('TestMail', testSchema)
 
-describe('Email: types', () => {
+describe('Email types', () => {
   it('should be invalid if the invalid email address', (done) => {
     var t = new TestMail()
     t.email = 'email@'

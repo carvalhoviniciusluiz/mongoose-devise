@@ -4,11 +4,11 @@ import faker from 'faker'
 import { before, beforeEach, describe, it } from 'mocha'
 import { expect } from 'chai'
 import mongoose from 'mongoose'
-import devise from '..'
+import { devise } from '..'
 
 const Schema = mongoose.Schema
 
-describe('Lockable: models', () => {
+describe('Lockable models', () => {
   before((done) => {
     const LockableSchema = new Schema({})
     LockableSchema.plugin(devise)
@@ -24,7 +24,6 @@ describe('Lockable: models', () => {
   describe('Lockable Fields', () => {
     it('should have lockation fields', (done) => {
       const Lockable = mongoose.model('Lockable')
-
       expect(Lockable.schema.paths).to.have.property('failedAttempts')
       expect(Lockable.schema.paths).to.have.property('lockedAt')
       expect(Lockable.schema.paths).to.have.property('unlockedAt')
@@ -36,26 +35,20 @@ describe('Lockable: models', () => {
 
     it('should be able to set custom lockation', async () => {
       const LockableSchema = new Schema({})
-
       LockableSchema.plugin(devise, {
         authenticationField: 'username',
-        accountLockedErrorMessage: '1',
-        invalidUnlockTokenErrorMessage: '2',
-        unlockTokenExpiredErrorMessage: '3',
-        lockable: {
-          tokenLifeSpan: 1
-        }
+        accountLockedError: 'accountLockedError',
+        invalidUnlockTokenError: 'invalidUnlockTokenError',
+        unlockTokenExpiredError: 'unlockTokenExpiredError'
       })
       const Lockable = mongoose.model('LockableSchemaTest', LockableSchema)
-
       try {
         await Lockable.unlock()
       } catch (error) {
-        expect(error.message).to.equal('2')
+        expect(error.message).to.equal('invalidUnlockTokenError')
       }
-      // TODO test to accountLockedErrorMessage
-      // TODO test to unlockTokenExpiredErrorMessage
-      // TODO test to lockable object
+      // TODO test to accountLockedError
+      // TODO test to unlockTokenExpiredError
     })
   })
 
@@ -66,10 +59,9 @@ describe('Lockable: models', () => {
       password: faker.internet.password()
     })
     expect(lockable.generateUnlockToken).to.be.a('function')
-
-    const res = await lockable.generateUnlockToken()
-    expect(res.unlockToken).to.not.be.null()
-    expect(res.unlockTokenExpiryAt).to.not.be.null()
+    lockable.generateUnlockToken()
+    expect(lockable.unlockToken).to.not.be.null()
+    expect(lockable.unlockTokenExpiryAt).to.not.be.null()
   })
 
   it('should be able to send unlock instructions', async () => {
@@ -79,8 +71,7 @@ describe('Lockable: models', () => {
       password: faker.internet.password()
     })
     expect(lockable.sendUnlock).to.be.a('function')
-
-    await lockable.sendUnlock()
+    lockable.sendUnlock()
     expect(lockable.unlockTokenSentAt).to.not.be.null()
   })
 
@@ -91,7 +82,6 @@ describe('Lockable: models', () => {
       password: faker.internet.password()
     })
     expect(lockable.lock).to.be.a('function')
-
     await lockable.lock()
     expect(lockable.lockedAt).to.not.be.null()
   })
@@ -103,14 +93,9 @@ describe('Lockable: models', () => {
       password: faker.internet.password()
     })
     expect(lockable.isLocked).to.be.a('function')
-
+    expect(lockable.isLocked()).to.be.false()
     await lockable.lock()
-    try {
-      await lockable.isLocked()
-    } catch (error) {
-      expect(error).to.exist()
-      expect(error.message).to.equal('Account locked. Check unlock instructions sent to you.')
-    }
+    expect(lockable.isLocked()).to.be.true()
   })
 
   it('should be able to unlock account', async () => {
@@ -119,11 +104,9 @@ describe('Lockable: models', () => {
       password: faker.internet.password(),
       email: faker.internet.email().toLowerCase()
     })
-    await lockable.generateUnlockToken()
-    await lockable.sendUnlock()
-
+    lockable.generateUnlockToken()
+    await lockable.lock()
     expect(Lockable.unlock).to.be.a('function')
-
     const res = await Lockable.unlock(lockable.unlockToken)
     expect(res.unlockedAt).to.not.be.null()
     expect(res.lockedAt).to.be.null()
@@ -138,29 +121,13 @@ describe('Lockable: models', () => {
       failedAttempts: 5
     }
     const lockable = new Lockable(credentials)
-
-    await lockable.generateConfirmationToken()
+    lockable.generateConfirmationToken()
     await lockable.confirm(lockable.confirmationToken)
     await lockable.lock()
     try {
       await lockable.authenticate(credentials.password)
     } catch (error) {
-      expect(error).to.exist()
       expect(error.message).to.equal('Account locked. Check unlock instructions sent to you.')
     }
-  })
-
-  it('should be able to reset failed attempts', async () => {
-    const Lockable = mongoose.model('Lockable')
-    const lockable = new Lockable({
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      failedAttempts: 5
-    })
-    expect(lockable.resetFailedAttempts).to.be.a('function')
-
-    await lockable.save()
-    lockable.resetFailedAttempts()
-    expect(lockable.failedAttempts).to.be.equal(0)
   })
 })

@@ -1,207 +1,185 @@
 'use strict'
 
-import bcrypt from 'bcryptjs'
 import assert from 'assert-plus'
 import mongoose from 'mongoose'
-import { isFunction, parseError } from '../helpers'
+import bcrypt from 'bcryptjs'
+import { DeviseError } from '../errors'
+import { Utils } from '../helpers'
 
-const Schema = mongoose.Schema
-const Email = Schema.Types.Email
+// only the necessary functions
+const { isObject } = Utils
+
+const deviseError = new DeviseError()
+deviseError.code = 'EAUTH'
+
+export const hashedPassword = function (obj, next) {
+  bcrypt.hash(obj[options.passwordField], 10)
+    .then(hashed => {
+      obj[options.passwordField] = hashed
+      next()
+    })
+    .catch(next)
+}
+
+export const saveMiddlerware = function (next) {
+  const self = this
+  if (!self.isModified(options.passwordField)) {
+    next()
+  } else {
+    hashedPassword(self, next)
+  }
+}
+
+export const updateMiddlerware = function (next) {
+  if (!this.getUpdate()[options.passwordField]) {
+    next()
+  } else {
+    hashedPassword(this.getUpdate(), next)
+  }
+}
 
 let options = {}
 
-export default function (schema, opt) {
+export function authenticable (schema, opts) {
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
 
-  options = opt || {}
+  options = opts || {}
 
-  // prepare authentication field
   options.authenticationField = options.authenticationField || 'email'
-  options.authenticationFieldType = options.authenticationFieldType || Email
-
-  // prepare password field
+  options.authenticationFieldMessage = options.authenticationFieldMessage || undefined
+  options.authenticationFieldType = options.authenticationFieldType || mongoose.Schema.Types.Email
   options.passwordField = options.passwordField || 'password'
-
-  // prepare hashed password field
-  options.hashedPasswordField = options.hashedPasswordField || 'hash'
-
-  // prepare error's messages
-  options.authenticatorErrorMessage =
-    options.authenticatorErrorMessage || `No ${options.authenticationField} provided`
-
-  options.passwordErrorMessage =
-    options.passwordErrorMessage || 'No password provided'
-
-  options.passwordNotMatchErrorMessage =
-    options.passwordNotMatchErrorMessage || 'Incorrect password'
-
-  options.hashedPasswordErrorMessage =
-    options.hashedPasswordErrorMessage || 'Hashed password not found'
-
-  options.saltErrorMessage =
-    options.saltErrorMessage || 'Does not have salt'
-
-  options.authenticatorNotExistErrorMessage =
-    options.authenticatorNotExistErrorMessage || `Incorrect ${options.authenticationField}`
-
-  options.credentialsNotExistErrorMessage =
-    options.credentialsNotExistErrorMessage || 'Incorrect credentials'
+  options.authenticatorError = options.authenticatorError || `No ${options.authenticationField} provided`
+  options.passwordError = options.passwordError || 'No password provided'
+  options.authenticatorNotExistError = options.authenticatorNotExistError || `Incorrect ${options.authenticationField}`
+  options.credentialsNotExistError = options.credentialsNotExistError || 'Incorrect credentials'
 
   // prepare common options
-  options.maximumAllowedFailedAttempts = options.lockable
-    ? (options.lockable.maximumAllowedFailedAttempts || 3) : 3
+  options.lockable.maximumAllowedFailedAttempts = options.lockable ? (options.lockable.maximumAllowedFailedAttempts || 3) : 3
 
   // prepare schema fields
   const authenticationFields = {}
 
-  // prepare authentication field
   authenticationFields[options.authenticationField] = {
     type: options.authenticationFieldType,
-    lowercase: true,
+    message: options.authenticationFieldMessage,
     unique: true,
     trim: true,
-    index: true
+    index: true,
+    required: true
   }
 
-  // prepare hashed password field
-  authenticationFields[options.hashedPasswordField] = {
-    type: String
-  }
-
-  // prepare salt field
-  authenticationFields.salt = {
-    type: String
+  authenticationFields[options.passwordField] = {
+    type: String,
+    required: true,
+    select: false
   }
 
   // add authentibale fields into schema
   schema.add(authenticationFields)
 
-  // trigger function
-  schema.virtual(options.passwordField).set(function (password) {
-    const scope = this
-    scope.encryptPassword(password)
-  })
+  schema.pre('save', saveMiddlerware)
+  schema.pre('findOneAndUpdate', updateMiddlerware)
+  schema.pre('update', updateMiddlerware) // << deprecation
+  schema.pre('updateOne', updateMiddlerware)
+  schema.pre('updateMany', updateMiddlerware)
 
-  schema.methods.encryptPassword = function (password) {
+  schema.methods.validPassword = function (password) {
     const self = this
-    try {
-      assert.ok(password, this.t('passwordErrorMessage'))
 
-      if (!self.salt) {
-        self.salt = bcrypt.genSaltSync(10)
-      }
-
-      self.hash = bcrypt.hashSync(password, self.salt)
-    } catch (error) {
-      throw error
+    if (!password) {
+      return false
     }
+    if (!self[options.passwordField]) {
+      return false
+    }
+
+    return bcrypt.compareSync(password, self[options.passwordField])
   }
 
-  schema.methods.comparePassword = async function (password) {
+  schema.methods.authenticate = function (password, opts) {
     const self = this
+
     return new Promise(async (resolve, reject) => {
-      try {
-        assert.ok(self.hash, this.t('hashedPasswordErrorMessage'))
-        assert.ok(password, this.t('passwordErrorMessage'))
-
-        const res = bcrypt.compareSync(password, self.hash)
-        assert.ok(res, this.t('passwordNotMatchErrorMessage'))
-
-        // password do match
-        resolve(true)
-      } catch (error) {
-        // if there is any error during comparison
-        reject(error)
+      if (!self.isConfirmed()) {
+        const error = self.throwConfirmedError()
+        return reject(error)
       }
-    })
-  }
 
-  schema.methods.changePassword = async function (newPassword) {
-    const self = this
-    return new Promise(async (resolve, reject) => {
-      try {
-        await self.encryptPassword(newPassword)
-        await self.save()
-
-        resolve(true)
-      } catch (error) {
-        reject(error)
+      if (self.isLocked()) {
+        const error = self.throwLockedError()
+        return reject(error)
       }
-    })
-  }
 
-  schema.statics.authenticate = async function (credentials, opts) {
-    const Authenticable = this
-    return new Promise(async (resolve, reject) => {
-      try {
-        assert.object(credentials, this.t('credentialsNotExistErrorMessage'))
-        assert.ok(credentials.password, this.t('passwordErrorMessage'))
-        assert.ok(credentials[options.authenticationField], this.t('authenticatorErrorMessage', {
-          field: options.authenticationField
-        }))
+      const passwordIsValid = self.validPassword(password)
 
-        const criteria = {}
-        criteria[options.authenticationField] = credentials[options.authenticationField]
+      if (passwordIsValid) {
+        self.failedAttempts = 0
+        await self.track()
+      } else {
+        self.failedAttempts = self.failedAttempts + 1
+        const failedAttemptsExceed = self.failedAttempts >= options.lockable.maximumAllowedFailedAttempts
 
-        // ensure authenticable is active
-        criteria.unregisteredAt = null
-
-        const authenticable = await Authenticable.findOne(criteria)
-        assert.object(authenticable, this.t('authenticatorNotExistErrorMessage', {
-          field: options.authenticationField
-        }))
-
-        await authenticable.authenticate(credentials.password, opts)
-
-        resolve(authenticable)
-      } catch (error) {
-        parseError(error)
-        reject(error)
-      }
-    })
-  }
-
-  schema.methods.authenticate = async function (password, opts) {
-    const self = this
-    return new Promise(async (resolve, reject) => {
-      try {
-        // check account if is confirmed only if schema is confirmable
-        if (isFunction(self.isConfirmed)) {
-          await self.isConfirmed()
-        }
-
-        // check if account is locked only if account is lockable
-        if (isFunction(self.isLocked)) {
-          await self.isLocked()
-        }
-
-        await self.comparePassword(password)
-
-        // clear previous failed attempts and save authenticable instance
-        if (isFunction(self.resetFailedAttempts)) {
-          await self.resetFailedAttempts()
-        }
-
-        resolve(true)
-      } catch (error) {
-        if (self.confirmedAt !== null) {
-          // update failed attempts
-          self.failedAttempts = self.failedAttempts + 1
-
-          // is failed attempts exceed maximum allowed attempts
-          const failedAttemptsExceed =
-            self.failedAttempts >= options.maximumAllowedFailedAttempts
-
-          // lock account and throw account locked error
-          if (failedAttemptsExceed) {
+        // the attempts exceeded the maximum allowed lock the account
+        if (failedAttemptsExceed) {
+          try {
             await self.lock(opts)
+            return resolve(passwordIsValid)
+          } catch (error) {
+            return reject(error)
           }
-
-          // failed attempts are less than maximum allowed failed attempts
-          // save authenticable and return password does not match error
-          await self.save()
         }
+      }
+
+      try {
+        // updates the number of attempts made
+        await self.save()
+        resolve(passwordIsValid)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
+  schema.statics.authenticate = function (credentials, opts) {
+    const Authenticable = this
+
+    return new Promise(async (resolve, reject) => {
+      if (!isObject(credentials)) {
+        deviseError.message = this.t('credentialsNotExistError')
+        return reject(deviseError)
+      }
+
+      if (!credentials[options.passwordField]) {
+        deviseError.message = this.t('passwordError')
+        return reject(deviseError)
+      }
+
+      if (!credentials[options.authenticationField]) {
+        deviseError.message = this.t('authenticatorError', {
+          field: options.authenticationField
+        })
+        return reject(deviseError)
+      }
+
+      const criteria = {
+        unregisteredAt: null // ensure authenticable is active
+      }
+      criteria[options.authenticationField] = credentials[options.authenticationField]
+      const authenticable = await Authenticable.findOne(criteria, `+${options.passwordField}`)
+
+      if (!authenticable) {
+        deviseError.message = this.t('authenticatorNotExistError', {
+          field: options.authenticationField
+        })
+        return reject(deviseError)
+      }
+
+      try {
+        const res = await authenticable.authenticate(credentials[options.passwordField], opts)
+        resolve(res ? authenticable : false)
+      } catch (error) {
         reject(error)
       }
     })

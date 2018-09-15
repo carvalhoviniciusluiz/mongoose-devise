@@ -1,6 +1,18 @@
 'use strict'
 
-export default function (schema) {
+import { networkInterfaces } from 'os'
+
+function externalIpAddress () {
+  try {
+    return [].concat(...Object.values(networkInterfaces()))
+      .filter(details => details.family === 'IPv4' && !details.internal)
+      .pop().address
+  } catch (_e) {
+    return ''
+  }
+}
+
+export function trackable (schema) {
   // add trackable schema fields
   schema.add({
     signInCount: {
@@ -10,48 +22,41 @@ export default function (schema) {
     },
     currentSignInAt: {
       type: Date,
-      default: null
+      default: null,
+      index: true
     },
     currentSignInIpAddress: {
       type: String,
-      index: true,
-      default: null
+      default: null,
+      index: true
     },
     lastSignInAt: {
       type: Date,
-      default: null
+      default: null,
+      index: true
     },
     lastSignInIpAddress: {
       type: String,
-      index: true,
-      default: null
+      default: null,
+      index: true
     }
   })
 
-  schema.methods.track = function (ipAddress, opts = { save: true }) {
+  schema.methods.track = async function (ipAddress) {
     const self = this
-    return new Promise(async (resolve, reject) => {
-      try {
-        // update signInCount
-        self.signInCount = self.signInCount + 1
 
-        // update previous sign in details
-        self.lastSignInAt = self.currentSignInAt
-        self.lastSignInIpAddress = self.currentSignInIpAddress
+    // update signInCount
+    self.signInCount = self.signInCount + 1
 
-        // update current sign in details
-        self.currentSignInAt = new Date()
-        self.currentSignInIpAddress = ipAddress
+    // update previous sign in details
+    self.lastSignInAt = self.currentSignInAt
+    self.lastSignInIpAddress = self.currentSignInIpAddress
 
-        // save tracking details
-        if (opts.save) {
-          await self.save()
-        }
+    // update current sign in details
+    self.currentSignInAt = new Date()
+    self.currentSignInIpAddress = ipAddress || await externalIpAddress()
 
-        resolve(true)
-      } catch (error) {
-        reject(error)
-      }
-    })
+    // save tracking details
+    await self.save()
   }
 }
