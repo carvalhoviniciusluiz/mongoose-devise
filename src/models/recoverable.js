@@ -5,7 +5,7 @@ import { DeviseError } from '../errors'
 import { Utils } from '../helpers'
 
 // only the necessary functions
-const { genToken, addDays, isFunction, isAfter, isObject, parseError } = Utils
+const { genToken, addDays, isFunction, isAfter, isObject } = Utils
 
 const deviseError = new DeviseError()
 deviseError.code = 'ERECOV'
@@ -171,7 +171,7 @@ export function recoverable (schema, opts) {
 
         resolve(recoverable)
       } catch (error) {
-        reject(parseError(error))
+        reject(error)
       }
     })
   }
