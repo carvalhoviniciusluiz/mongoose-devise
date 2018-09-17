@@ -1,4 +1,0 @@
---require babel-core/register
---require co-mocha test/setup
---recursive
---exit

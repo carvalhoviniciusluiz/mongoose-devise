@@ -13,5 +13,7 @@ yarn.lock
 .cache/
 
 # Generated sources
+/types/
 dist/
 build/
+src/**/*.js

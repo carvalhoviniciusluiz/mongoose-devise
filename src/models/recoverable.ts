@@ -1,18 +1,34 @@
-'use strict'
-
+import mongoose from 'mongoose'
 import assert from 'assert-plus'
+
+import { DeviseOptions } from '..'
 import { DeviseError } from '../errors'
 import { Utils } from '../helpers'
 
 // only the necessary functions
-const { genToken, addDays, isFunction, isAfter, isObject } = Utils
+const { genToken, addDays, isFunction, isAfter, isObject, parseError } = Utils
 
 const deviseError = new DeviseError()
 deviseError.code = 'ERECOV'
 
-let options = {}
+declare module 'mongoose' {
+  interface Model<T extends Document> extends NodeJS.EventEmitter, ModelProperties {
+    requestRecover (credentials: object, opts: object): Promise<mongoose.Model<T>|Error>
+    recover (recoveryToken: string, newPassword: string): Promise<mongoose.Model<T>|Error>
+  }
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    recoveryToken: string,
+    recoveryTokenExpiryAt: string,
+    recoverySentAt: string,
+    recoveredAt: string,
+    generateRecoveryToken (): void
+    sendRecovery (opts: object): void
+  }
+}
 
-export function recoverable (schema, opts) {
+let options: DeviseOptions = {}
+
+export function recoverable (schema: mongoose.Schema, opts?: DeviseOptions): void {
   assert.func(schema.methods.sendNotification, 'sendNotification method')
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
@@ -40,34 +56,32 @@ export function recoverable (schema, opts) {
     },
     recoveryTokenExpiryAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     recoverySentAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     recoveredAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     }
   })
 
   // check if recovery token expired
-  schema.methods.hasRecoveryTokenExpired = function () {
+  schema.methods.hasRecoveryTokenExpired = function (): boolean {
     return !isAfter(new Date(), this.recoveryTokenExpiryAt)
   }
 
-  schema.methods.generateRecoveryToken = function () {
-    const self = this
+
+  schema.methods.generateRecoveryToken = function (): void {
+    const self: any = this
 
     // set recovery expiration date
     self.recoveryTokenExpiryAt = addDays(options.recoverable.tokenLifeSpan)
 
     // generate recovery token based on recovery token expiry at
-    const tokenizer = genToken(self.recoveryTokenExpiryAt.getTime().toString())
+    const tokenizer: any = genToken(self.recoveryTokenExpiryAt.getTime().toString())
 
     // set recoveryToken
     self.recoveryToken = tokenizer.encrypt(self[options.authenticationField])
@@ -76,11 +90,11 @@ export function recoverable (schema, opts) {
     self.recoveredAt = null
   }
 
-  schema.methods.sendRecovery = function (opts) {
-    const self = this
+  schema.methods.sendRecovery = function (opts: object): void {
+    const self: any = this
 
     // send recoverable instructions
-    self.sendNotification(self, 'password_recovery', async fn => {
+    self.sendNotification(self, 'password_recovery', async (fn?: Function) => {
       try {
         // update recovery send time
         self.recoverySentAt = new Date()
@@ -94,8 +108,8 @@ export function recoverable (schema, opts) {
     })
   }
 
-  schema.statics.requestRecover = function (credentials, opts) {
-    const Recoverable = this
+  schema.statics.requestRecover = function (credentials: object, opts: object): Promise<any> {
+    const Recoverable: any = this
 
     return new Promise(async (resolve, reject) => {
       if (!isObject(credentials) || !credentials[options.authenticationField]) {
@@ -105,11 +119,11 @@ export function recoverable (schema, opts) {
         return reject(deviseError)
       }
 
-      const criteria = {}
+      const criteria: object = {}
       criteria[options.authenticationField] = credentials[options.authenticationField]
 
       try {
-        const recoverable = await Recoverable.findOne(criteria)
+        const recoverable: any = await Recoverable.findOne(criteria)
         if (!recoverable) {
           deviseError.message = this.t('accountWithoutAssociationError')
           return reject(deviseError)
@@ -134,11 +148,11 @@ export function recoverable (schema, opts) {
     })
   }
 
-  schema.statics.recover = function (recoveryToken, newPassword) {
-    const Recoverable = this
+  schema.statics.recover = function (recoveryToken: string, newPassword: string): Promise<any> {
+    const Recoverable: any = this
     return new Promise(async (resolve, reject) => {
       try {
-        const recoverable = await Recoverable.findOne({ recoveryToken })
+        const recoverable: any = await Recoverable.findOne({ recoveryToken })
         if (!recoverable) {
           deviseError.message = this.t('invalidRecoveryTokenError')
           return reject(deviseError)
@@ -151,8 +165,8 @@ export function recoverable (schema, opts) {
         }
 
         // verify recovery token
-        const val = recoverable.recoveryTokenExpiryAt.getTime().toString()
-        const tokenizer = genToken(val)
+        const val: any = recoverable.recoveryTokenExpiryAt.getTime().toString()
+        const tokenizer: any = genToken(val)
 
         if (!tokenizer.match(recoveryToken, recoverable[options.authenticationField])) {
           deviseError.message = this.t('invalidRecoveryTokenError')
@@ -171,7 +185,7 @@ export function recoverable (schema, opts) {
 
         resolve(recoverable)
       } catch (error) {
-        reject(error)
+        reject(parseError(error))
       }
     })
   }

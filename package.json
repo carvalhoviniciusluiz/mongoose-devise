@@ -1,6 +1,6 @@
 {
   "name": "mongoose-devise",
-  "version": "1.0.0",
+  "version": "1.0.2-beta",
   "description": "Another flexible authentication solution for mongoose.",
   "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
   "license": "MIT",
@@ -8,18 +8,31 @@
   "types": "types/index.d.ts",
   "module": "dist/mongoose-devise.es.js",
   "scripts": {
-    "lint": "eslint .",
-    "test": "mocha src",
-    "test:file": "mocha",
-    "pretest": "npm run lint",
-    "build": "babel src --out-dir build --ignore *.spec.js --no-comments",
-    "bundle": "bili build/index.js --formats es,cjs --js buble --banner",
-    "prepublishOnly": "npm run build && npm run bundle"
+    "build": "tsc",
+    "bundle": "bili src/index.js --formats es,cjs --js buble --banner",
+    "test": "ts-node jest.startup.js --detectOpenHandles --forceExit --no-cache",
+    "pretest": "npm run build",
+    "prepublishOnly": "npm run test && npm run bundle"
   },
   "files": [
     "dist/",
     "types/"
   ],
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carvalhoviniciusluiz/mongoose-devise.git"
@@ -35,29 +48,24 @@
     "moment": "^2.22.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-eslint": "^8.2.3",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0",
-    "babel-runtime": "^6.26.0",
+    "@types/assert-plus": "^1.0.4",
+    "@types/bcryptjs": "^2.4.1",
+    "@types/faker": "^4.1.4",
+    "@types/jest": "^23.3.2",
+    "@types/lodash": "^4.14.116",
+    "@types/moment": "^2.13.0",
+    "@types/mongoose": "^5.2.15",
     "bili": "^3.1.2",
-    "chai": "^4.1.2",
-    "chai-http": "^4.0.0",
-    "co-mocha": "^1.2.2",
-    "dirty-chai": "^2.0.1",
-    "eslint": "^4.19.1",
-    "eslint-config-standard": "^11.0.0",
-    "eslint-plugin-import": "^2.12.0",
-    "eslint-plugin-node": "^6.0.1",
-    "eslint-plugin-promise": "^3.8.0",
-    "eslint-plugin-standard": "^3.1.0",
     "faker": "^4.1.0",
-    "mocha": "^5.2.0",
+    "jest": "^23.6.0",
+    "jest-cli": "^23.6.0",
     "mongoose": "^5.1.4",
-    "pre-commit": "^1.2.2"
+    "pre-commit": "^1.2.2",
+    "ts-jest": "^23.1.4",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.3"
   },
   "pre-commit": [
-    "lint",
     "test"
   ],
   "keywords": [

@@ -1,6 +1,7 @@
-'use strict'
-
+import mongoose from 'mongoose'
 import assert from 'assert-plus'
+
+import { DeviseOptions } from '..'
 import { DeviseError } from '../errors'
 import { Utils } from '../helpers'
 
@@ -10,9 +11,22 @@ const { isFunction, isObject } = Utils
 const deviseError = new DeviseError()
 deviseError.code = 'EREGIST'
 
-let options = {}
+declare module 'mongoose' {
+  interface Model<T extends Document> extends NodeJS.EventEmitter, ModelProperties {
+    requestRecover (credentials: object, opts: object): Promise<mongoose.Model<T>|Error>
+    recover (recoveryToken: string, newPassword: string): Promise<mongoose.Model<T>|Error>
+  }
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    registeredAt: string,
+    unregisteredAt: string,
+    unregister (beforeUnregister?: Function, afterUnregister?: Function): Promise<boolean|Error>
+    register (opts: object): Promise<boolean|Error>
+  }
+}
 
-export function registerable (schema, opts) {
+let options: DeviseOptions = {}
+
+export function registerable (schema: mongoose.Schema, opts?: DeviseOptions): void {
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
 
@@ -25,20 +39,18 @@ export function registerable (schema, opts) {
     // track when registration occur
     registeredAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
 
     // track when account has been unregistered
     unregisteredAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     }
   })
 
-  schema.methods.unregister = async function (beforeUnregister, afterUnregister) {
-    const self = this
+  schema.methods.unregister = async function (beforeUnregister?: Function, afterUnregister?: Function): Promise<any> {
+    const self: any = this
 
     return new Promise(async (resolve, reject) => {
       try {
@@ -62,7 +74,7 @@ export function registerable (schema, opts) {
     })
   }
 
-  schema.methods.register = async function (opts) {
+  schema.methods.register = async function (opts: object): Promise<any> {
     const self = this
 
     return new Promise(async (resolve, reject) => {
@@ -88,8 +100,8 @@ export function registerable (schema, opts) {
     })
   }
 
-  schema.statics.register = function (definitions, opts) {
-    const Registerable = this
+  schema.statics.register = function (definitions: object, opts: object): Promise<any> {
+    const Registerable: any = this
 
     return new Promise(async (resolve, reject) => {
       if (!isObject(definitions)) {
@@ -98,7 +110,7 @@ export function registerable (schema, opts) {
       }
 
       try {
-        let registerable = new Registerable(definitions)
+        let registerable: any = new Registerable(definitions)
         await registerable.register(opts)
 
         resolve(registerable)

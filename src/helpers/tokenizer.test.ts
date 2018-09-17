@@ -1,7 +1,5 @@
-'use strict'
+import 'jest'
 
-import { expect } from 'chai'
-import { describe, it } from 'mocha'
 import { genToken } from './tokenizer'
 
 describe('Tokenizer helpers', () => {
@@ -12,7 +10,7 @@ describe('Tokenizer helpers', () => {
     const encrypt = genToken(key).encrypt(text)
     const decrypt = genToken(key).decrypt(encrypt)
 
-    expect(decrypt).to.be.equal(text)
+    expect(decrypt).toEqual(text)
     done()
   })
 })

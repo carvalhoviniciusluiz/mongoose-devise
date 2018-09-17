@@ -1,8 +1,8 @@
-'use strict'
-
-import assert from 'assert-plus'
 import mongoose from 'mongoose'
+import assert from 'assert-plus'
 import bcrypt from 'bcryptjs'
+
+import { DeviseOptions } from '..'
 import { DeviseError } from '../errors'
 import { Utils } from '../helpers'
 
@@ -12,7 +12,18 @@ const { isObject } = Utils
 const deviseError = new DeviseError()
 deviseError.code = 'EAUTH'
 
-export const hashedPassword = function (obj, next) {
+declare module 'mongoose' {
+  interface Model<T extends Document> extends NodeJS.EventEmitter, ModelProperties {
+    authenticate (credentials: object, opts: object): Promise<mongoose.Model<T>|Error>
+  }
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    validPassword (password: string): Promise<boolean|Error>
+    authenticate (password: string, opts: object): Promise<boolean|Error>
+  }
+}
+
+
+export const hashedPassword = (obj: object, next: any): void => {
   bcrypt.hash(obj[options.passwordField], 10)
     .then(hashed => {
       obj[options.passwordField] = hashed
@@ -21,8 +32,8 @@ export const hashedPassword = function (obj, next) {
     .catch(next)
 }
 
-export const saveMiddlerware = function (next) {
-  const self = this
+export const saveMiddlerware = function (next: any): void {
+  const self: any = this
   if (!self.isModified(options.passwordField)) {
     next()
   } else {
@@ -30,7 +41,7 @@ export const saveMiddlerware = function (next) {
   }
 }
 
-export const updateMiddlerware = function (next) {
+export const updateMiddlerware = function (next: any): void {
   if (!this.getUpdate()[options.passwordField]) {
     next()
   } else {
@@ -38,9 +49,9 @@ export const updateMiddlerware = function (next) {
   }
 }
 
-let options = {}
+let options: DeviseOptions = {}
 
-export function authenticable (schema, opts) {
+export function authenticable (schema: mongoose.Schema, opts?: DeviseOptions): void {
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
 
@@ -81,12 +92,12 @@ export function authenticable (schema, opts) {
 
   schema.pre('save', saveMiddlerware)
   schema.pre('findOneAndUpdate', updateMiddlerware)
-  schema.pre('update', updateMiddlerware) // << deprecation
+  schema.pre('update', updateMiddlerware) //<< deprecation
   schema.pre('updateOne', updateMiddlerware)
   schema.pre('updateMany', updateMiddlerware)
 
-  schema.methods.validPassword = function (password) {
-    const self = this
+  schema.methods.validPassword = function (password: string): boolean {
+    const self: any = this
 
     if (!password) {
       return false
@@ -98,8 +109,8 @@ export function authenticable (schema, opts) {
     return bcrypt.compareSync(password, self[options.passwordField])
   }
 
-  schema.methods.authenticate = function (password, opts) {
-    const self = this
+  schema.methods.authenticate = function (password: string, opts: object): Promise<any> {
+    const self: any = this
 
     return new Promise(async (resolve, reject) => {
       if (!self.isConfirmed()) {
@@ -119,7 +130,7 @@ export function authenticable (schema, opts) {
         await self.track()
       } else {
         self.failedAttempts = self.failedAttempts + 1
-        const failedAttemptsExceed = self.failedAttempts >= options.lockable.maximumAllowedFailedAttempts
+        const failedAttemptsExceed: boolean = self.failedAttempts >= options.lockable.maximumAllowedFailedAttempts
 
         // the attempts exceeded the maximum allowed lock the account
         if (failedAttemptsExceed) {
@@ -142,8 +153,8 @@ export function authenticable (schema, opts) {
     })
   }
 
-  schema.statics.authenticate = function (credentials, opts) {
-    const Authenticable = this
+  schema.statics.authenticate = function (credentials: object, opts: object): Promise<any> {
+    const Authenticable: any = this
 
     return new Promise(async (resolve, reject) => {
       if (!isObject(credentials)) {
@@ -163,11 +174,11 @@ export function authenticable (schema, opts) {
         return reject(deviseError)
       }
 
-      const criteria = {
+      const criteria: object = {
         unregisteredAt: null // ensure authenticable is active
       }
       criteria[options.authenticationField] = credentials[options.authenticationField]
-      const authenticable = await Authenticable.findOne(criteria, `+${options.passwordField}`)
+      const authenticable: any = await Authenticable.findOne(criteria, `+${options.passwordField}`)
 
       if (!authenticable) {
         deviseError.message = this.t('authenticatorNotExistError', {

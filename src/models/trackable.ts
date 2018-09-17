@@ -1,6 +1,16 @@
-'use strict'
-
+import mongoose from 'mongoose'
 import { networkInterfaces } from 'os'
+
+declare module 'mongoose' {
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    signInCount: string,
+    currentSignInAt: string,
+    currentSignInIpAddress: string,
+    lastSignInAt: string,
+    lastSignInIpAddress: string,
+    track (ipAddress?: string): void
+  }
+}
 
 function externalIpAddress () {
   try {
@@ -12,7 +22,7 @@ function externalIpAddress () {
   }
 }
 
-export function trackable (schema) {
+export function trackable (schema: mongoose.Schema): void {
   // add trackable schema fields
   schema.add({
     signInCount: {
@@ -22,29 +32,26 @@ export function trackable (schema) {
     },
     currentSignInAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     currentSignInIpAddress: {
       type: String,
-      default: null,
-      index: true
+      index: true,
+      default: null
     },
     lastSignInAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     lastSignInIpAddress: {
       type: String,
-      default: null,
-      index: true
+      index: true,
+      default: null
     }
   })
 
-  schema.methods.track = async function (ipAddress) {
-    const self = this
-
+  schema.methods.track = async function (ipAddress?: string) {
+    const self: any = this
     // update signInCount
     self.signInCount = self.signInCount + 1
 

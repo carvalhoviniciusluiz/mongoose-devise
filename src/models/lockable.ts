@@ -1,6 +1,7 @@
-'use strict'
-
+import mongoose from 'mongoose'
 import assert from 'assert-plus'
+
+import { DeviseOptions } from '..'
 import { DeviseError } from '../errors'
 import { Utils } from '../helpers'
 
@@ -10,9 +11,29 @@ const { genToken, addDays, isFunction, isAfter } = Utils
 const deviseError = new DeviseError()
 deviseError.code = 'ELOCK'
 
-let options = {}
+declare module 'mongoose' {
+  interface Model<T extends Document> extends NodeJS.EventEmitter, ModelProperties {
+    unlock (unlockToken: string): Promise<mongoose.Model<T>|Error>
+  }
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    failedAttempts: string,
+    lockedAt: string,
+    unlockedAt: string,
+    unlockToken: string,
+    unlockTokenSentAt: string,
+    unlockTokenExpiryAt: string,
+    throwLockedError (): Error
+    hasUnlockTokenExpired (): boolean
+    isLocked (): boolean
+    generateUnlockToken (): void
+    sendUnlock (opts: object): void
+    lock (opts: object): Promise<boolean|Error>
+  }
+}
 
-export function lockable (schema, opts) {
+let options: DeviseOptions = {}
+
+export function lockable (schema: mongoose.Schema, opts?: DeviseOptions): void {
   assert.func(schema.methods.sendNotification, 'sendNotification method')
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
@@ -35,13 +56,11 @@ export function lockable (schema, opts) {
     },
     lockedAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     unlockedAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     unlockToken: {
       type: String,
@@ -50,40 +69,38 @@ export function lockable (schema, opts) {
     },
     unlockTokenSentAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     unlockTokenExpiryAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     }
   })
 
   // prepares an error message on a promise
-  schema.methods.throwLockedError = function () {
+  schema.methods.throwLockedError = function (): Error {
     deviseError.message = this.t('accountLockedError')
     return deviseError
   }
 
   // check if unlock token expired
-  schema.methods.hasUnlockTokenExpired = function () {
+  schema.methods.hasUnlockTokenExpired = function (): boolean {
     return !isAfter(new Date(), this.unlockTokenExpiryAt)
   }
 
   // check if already locked
-  schema.methods.isLocked = function () {
+  schema.methods.isLocked = function (): boolean {
     return this.lockedAt !== null
   }
 
-  schema.methods.generateUnlockToken = function () {
-    const self = this
+  schema.methods.generateUnlockToken = function (): void {
+    const self: any = this
 
     // set unlock expiration date
     self.unlockTokenExpiryAt = addDays(options.lockable.tokenLifeSpan)
 
     // generate unlock token based on unlock token expiry at
-    const tokenizer = genToken(self.unlockTokenExpiryAt.getTime().toString())
+    const tokenizer: any = genToken(self.unlockTokenExpiryAt.getTime().toString())
 
     // set unlockToken
     self.unlockToken = tokenizer.encrypt(self[options.authenticationField])
@@ -92,11 +109,11 @@ export function lockable (schema, opts) {
     self.unlockedAt = null
   }
 
-  schema.methods.sendUnlock = function (opts) {
-    const self = this
+  schema.methods.sendUnlock = function (opts: object): void {
+    const self: any = this
 
     // send unlock instructions
-    self.sendNotification(self, 'account_recovery', async fn => {
+    self.sendNotification(self, 'account_recovery', async (fn?: Function) => {
       try {
         // update unlock send time
         self.unlockTokenSentAt = new Date()
@@ -110,8 +127,8 @@ export function lockable (schema, opts) {
     })
   }
 
-  schema.methods.lock = function (opts) {
-    const self = this
+  schema.methods.lock = function (opts: object): Promise<any> {
+    const self: any = this
 
     return new Promise(async (resolve, reject) => {
       try {
@@ -133,13 +150,13 @@ export function lockable (schema, opts) {
     })
   }
 
-  schema.statics.unlock = function (unlockToken) {
-    const Lockable = this
+  schema.statics.unlock = function (unlockToken: string): Promise<any> {
+    const Lockable: any = this
 
     return new Promise(async (resolve, reject) => {
       try {
         // find lockable using unlock token
-        const lockable = await Lockable.findOne({ unlockToken })
+        const lockable: any = await Lockable.findOne({ unlockToken })
         if (!lockable) {
           deviseError.message = this.t('invalidUnlockTokenError')
           return reject(deviseError)
@@ -152,8 +169,8 @@ export function lockable (schema, opts) {
         }
 
         // verify locktoken
-        const val = lockable.unlockTokenExpiryAt.getTime().toString()
-        const tokenizer = genToken(val)
+        const val: any = lockable.unlockTokenExpiryAt.getTime().toString()
+        const tokenizer: any = genToken(val)
 
         if (!tokenizer.match(unlockToken, lockable[options.authenticationField])) {
           deviseError.message = this.t('invalidUnlockTokenError')

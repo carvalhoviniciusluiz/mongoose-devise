@@ -1,6 +1,7 @@
-'use strict'
-
+import mongoose from 'mongoose'
 import assert from 'assert-plus'
+
+import { DeviseOptions } from '..'
 import { Utils } from '../helpers'
 import { DeviseError } from '../errors'
 
@@ -10,9 +11,27 @@ const { genToken, addDays, isAfter, isFunction } = Utils
 const deviseError = new DeviseError()
 deviseError.code = 'ECONFIRM'
 
-let options = {}
+declare module 'mongoose' {
+  interface Model<T extends Document> extends NodeJS.EventEmitter, ModelProperties {
+    confirm (confirmationToken: string): Promise<mongoose.Model<T>|Error>
+  }
+  interface Document extends MongooseDocument, NodeJS.EventEmitter, ModelProperties {
+    confirmationToken: string,
+    confirmationTokenExpiryAt: string,
+    confirmedAt: string,
+    confirmationSentAt: string,
+    throwConfirmedError (): Error
+    hasConfirmationTokenExpired (): boolean
+    isConfirmed (): boolean
+    generateConfirmationToken (): void
+    sendConfirmation (opts: object): void
+    confirm (): Promise<boolean|Error>
+  }
+}
 
-export function confirmable (schema, opts) {
+let options: DeviseOptions = {}
+
+export function confirmable (schema: mongoose.Schema, opts?: DeviseOptions): void {
   assert.func(schema.methods.sendNotification, 'sendNotification method')
   assert.func(schema.methods.t, 'translator method')
   assert.func(schema.statics.t, 'translator method')
@@ -36,45 +55,42 @@ export function confirmable (schema, opts) {
     },
     confirmationTokenExpiryAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     confirmedAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     },
     confirmationSentAt: {
       type: Date,
-      default: null,
-      index: true
+      default: null
     }
   })
 
   // prepares an error message on a promise
-  schema.methods.throwConfirmedError = function () {
+  schema.methods.throwConfirmedError = function (): Error {
     deviseError.message = this.t('accountNotConfirmedError')
     return deviseError
   }
 
   // check if confirmation token expired
-  schema.methods.hasConfirmationTokenExpired = function () {
+  schema.methods.hasConfirmationTokenExpired = function (): boolean {
     return !isAfter(new Date(), this.confirmationTokenExpiryAt)
   }
 
   // check if already confirmed
-  schema.methods.isConfirmed = function () {
+  schema.methods.isConfirmed = function (): boolean {
     return this.confirmedAt !== null
   }
 
-  schema.methods.generateConfirmationToken = function () {
-    const self = this
+  schema.methods.generateConfirmationToken = function (): void {
+    const self: any = this
 
     // set confirmation expiration date
     self.confirmationTokenExpiryAt = addDays(options.confirmable.tokenLifeSpan)
 
     // generate confirmation token based on confirmation token expiry at
-    const tokenizer = genToken(self.confirmationTokenExpiryAt.getTime().toString())
+    const tokenizer: any = genToken(self.confirmationTokenExpiryAt.getTime().toString())
 
     // set confirmationToken
     self.confirmationToken = tokenizer.encrypt(self[options.authenticationField])
@@ -83,11 +99,11 @@ export function confirmable (schema, opts) {
     self.confirmedAt = null
   }
 
-  schema.methods.sendConfirmation = function (opts) {
-    const self = this
+  // send confirmation instructions
+  schema.methods.sendConfirmation = function (opts: object): void {
+    const self: any = this
 
-    // send confirmation instructions
-    self.sendNotification(self, 'account_confirmation', async fn => {
+    self.sendNotification(self, 'account_confirmation', async (fn?: Function) => {
       try {
         // update confirmation send time
         self.confirmationSentAt = new Date()
@@ -101,8 +117,8 @@ export function confirmable (schema, opts) {
     })
   }
 
-  schema.methods.confirm = function () {
-    let self = this
+  schema.methods.confirm = function (): Promise<boolean | Error> {
+    let self: any = this
 
     return new Promise(async (resolve, reject) => {
       if (!self.confirmationToken) {
@@ -115,9 +131,9 @@ export function confirmable (schema, opts) {
         return reject(deviseError)
       }
 
-      const val = self.confirmationTokenExpiryAt.getTime().toString()
-      const tokenizer = genToken(val)
-      const confirmed = tokenizer.match(self.confirmationToken, self[options.authenticationField])
+      const val: any = self.confirmationTokenExpiryAt.getTime().toString()
+      const tokenizer: any = genToken(val)
+      const confirmed: boolean = tokenizer.match(self.confirmationToken, self[options.authenticationField])
 
       // if the confirmation token is valid
       if (!confirmed) {
@@ -136,11 +152,11 @@ export function confirmable (schema, opts) {
     })
   }
 
-  schema.statics.confirm = function (confirmationToken) {
-    const Confirmable = this
+  schema.statics.confirm = function (confirmationToken: string): Promise<any> {
+    const Confirmable: any = this
 
     return new Promise(async (resolve, reject) => {
-      const confirmable = await Confirmable.findOne({ confirmationToken })
+      const confirmable: any = await Confirmable.findOne({ confirmationToken })
 
       if (!confirmable) {
         deviseError.message = this.t('invalidConfirmationTokenError')
