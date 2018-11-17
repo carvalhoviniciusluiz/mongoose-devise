@@ -1,7 +1,7 @@
 'use strict'
 
-import moment from 'moment'
 import { genToken } from './tokenizer'
+import { addDays, isAfter } from 'date-fns'
 
 export class Utils {}
 
@@ -11,12 +11,9 @@ Utils.genToken = genToken
 
 Utils.addDays = (offset, date) => {
   date = date || new Date()
-  const momentAt = moment(date).add(offset, 'days')
-  return momentAt.toDate()
+  return addDays(date, offset)
 }
 
 Utils.isAfter = (first, second) => {
-  const firstMoment = moment(first)
-  const secondMoment = moment(second)
-  return secondMoment.isAfter(firstMoment)
+  return isAfter(second, first)
 }

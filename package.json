@@ -1,6 +1,6 @@
 {
   "name": "mongoose-devise",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Another flexible authentication solution for mongoose.",
   "author": "Carvalho, Vinicius Luiz <carvalho.viniciusluiz@gmail.com>",
   "license": "MIT",
@@ -29,8 +29,8 @@
   "dependencies": {
     "assert-plus": "^1.0.0",
     "bcryptjs": "^2.4.3",
-    "lodash": "^4.17.11",
-    "moment": "^2.22.2"
+    "date-fns": "^1.29.0",
+    "lodash": "^4.17.11"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -51,6 +51,7 @@
     "eslint-plugin-standard": "^3.1.0",
     "faker": "^4.1.0",
     "mocha": "^5.2.0",
+    "moment": "^2.22.2",
     "mongoose": "^5.1.4",
     "pre-commit": "^1.2.2"
   },
